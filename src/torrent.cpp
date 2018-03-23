@@ -1343,6 +1343,16 @@ namespace libtorrent {
 		if (picker().is_finished(block_finished)) return;
 
 		picker().mark_as_finished(block_finished, nullptr);
+
+		if (alerts().should_post<piece_ready_alert>())
+		{
+			if (picker().is_piece_ready(block_finished.piece_index))
+			{
+				alerts().emplace_alert<piece_ready_alert>(get_handle(),
+					block_finished.piece_index);
+			}
+		}
+
 		maybe_done_flushing();
 
 		if (alerts().should_post<block_finished_alert>())
@@ -3823,6 +3833,17 @@ namespace libtorrent {
 
 		inc_stats_counter(counters::num_have_pieces);
 
+		if (m_ses.alerts().should_post<piece_finished_alert>())
+			m_ses.alerts().emplace_alert<piece_finished_alert>(get_handle(), index);
+
+		if (alerts().should_post<piece_ready_alert>())
+		{
+			if (has_picker() && picker().is_piece_ready(index))
+			{
+				alerts().emplace_alert<piece_ready_alert>(get_handle(), index);
+			}
+		}
+
 		// at this point, we have the piece for sure. It has been
 		// successfully written to disk. We may announce it to peers
 		// (unless it has already been announced through predictive_piece_announce
@@ -3883,9 +3904,6 @@ namespace libtorrent {
 
 		set_need_save_resume();
 		state_updated();
-
-		if (m_ses.alerts().should_post<piece_finished_alert>())
-			m_ses.alerts().emplace_alert<piece_finished_alert>(get_handle(), index);
 
 		// update m_file_progress (if we have one)
 		m_file_progress.update(m_torrent_file->files(), index

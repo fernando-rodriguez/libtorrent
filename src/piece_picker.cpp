@@ -2776,6 +2776,26 @@ get_out:
 		return true;
 	}
 
+	bool piece_picker::is_piece_ready(piece_index_t index) const
+	{
+		if (!is_piece_finished(index))
+			return false;
+
+		piece_pos const& p = m_piece_map[index];
+		int state = p.download_queue();
+
+		if (state < piece_pos::num_download_categories)
+		{
+			std::vector<downloading_piece>::const_iterator i =
+				find_dl_piece(state, index);
+			TORRENT_ASSERT(i != m_downloads[state].end());
+			if (int(i->finished) < blocks_in_piece(index))
+				return false;
+		}
+
+		return true;
+	}
+
 	bool piece_picker::has_piece_passed(piece_index_t const index) const
 	{
 		TORRENT_ASSERT(index < m_piece_map.end_index());

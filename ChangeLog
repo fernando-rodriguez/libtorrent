@@ -1,3 +1,5 @@
+	* fix missed piece_finished_alert
+	* added alert when piece has been verified and written to disk
 	* update plugin interface functions for improved type-safety
 	* implemented support magnet URI extension, select specific file indices
 	  for download, BEP53
