@@ -696,6 +696,13 @@ namespace libtorrent
 			// any.
 			proxy_tracker_connections,
 
+			// ``enable_reliable_alerts`` changes the behaviour of the alert
+			// manager to block instead of dropping alerts when the queue
+			// fills up. Special care must be taken when using this feature,
+			// specifically any asynchronous calls to the main thread can
+			// result in deadlock.
+			enable_reliable_alerts,
+
 			max_bool_setting_internal
 		};
 
@@ -1414,6 +1421,7 @@ namespace libtorrent
 			// internally. If alerts are not popped, the queue will eventually
 			// fill up to this level.
 			alert_queue_size,
+
 
 			// ``max_metadata_size`` is the maximum allowed size (in bytes) to be
 			// received by the metadata extension, i.e. magnet links.

@@ -46,6 +46,7 @@ namespace libtorrent
 		, m_queue_size_limit(queue_limit)
 		, m_num_queued_resume(0)
 		, m_generation(0)
+		, m_reliable_alerts(true)
 	{}
 
 	alert_manager::~alert_manager() {}
@@ -182,6 +183,7 @@ namespace libtorrent
 
 		// swap buffers
 		m_generation = (m_generation + 1) & 1;
+		m_condition.notify_all();
 		// clear the one we will start writing to now
 		m_alerts[m_generation].clear();
 		m_allocations[m_generation].reset();

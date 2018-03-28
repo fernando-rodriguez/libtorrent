@@ -94,7 +94,25 @@ namespace libtorrent {
 			// for high priority alerts, double the upper limit
 			if (m_alerts[m_generation].size() >= m_queue_size_limit
 				* (1 + T::priority))
-				return;
+			{
+				if (m_reliable_alerts)
+				{
+					do
+					{
+						m_condition.wait(lock);
+					}
+					while (m_reliable_alerts && m_alerts[m_generation].size() >=
+						m_queue_size_limit * (1 + T::priority));
+
+					// if m_reliable_alerts was cleared while we waited
+					// we may allow an alert that would've otherwise been
+					// dropped to be delivered
+				}
+				else
+				{
+					return;
+				}
+			}
 
 			T alert(m_allocations[m_generation], std::forward<Args>(args)...);
 			m_alerts[m_generation].push_back(alert);
@@ -117,7 +135,7 @@ namespace libtorrent {
 		bool should_post() const
 		{
 			mutex::scoped_lock lock(m_mutex);
-			if (m_alerts[m_generation].size() >= m_queue_size_limit
+			if (!m_reliable_alerts && m_alerts[m_generation].size() >= m_queue_size_limit
 				* (1 + T::priority))
 			{
 				return false;
@@ -141,6 +159,12 @@ namespace libtorrent {
 
 		int alert_queue_size_limit() const { return m_queue_size_limit; }
 		int set_alert_queue_size_limit(int queue_size_limit_);
+		int set_reliable_alerts(bool enabled)
+		{
+			mutex::scoped_lock lock(m_mutex);
+			m_reliable_alerts = enabled;
+			m_condition.notify_all();
+		}
 
 		void set_notify_function(boost::function<void()> const& fun);
 
@@ -166,6 +190,7 @@ namespace libtorrent {
 		condition_variable m_condition;
 		boost::uint32_t m_alert_mask;
 		int m_queue_size_limit;
+		bool m_reliable_alerts;
 
 #ifndef TORRENT_NO_DEPRECATE
 		bool maybe_dispatch(alert const& a);
